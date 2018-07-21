@@ -12,3 +12,6 @@ Current release is a alpha version and will contain errors and flaws. Please rep
 - Stats (Total Triggers and RPC)
 - Export (Export your triggers to a text file)
 - Filtering
+
+
+Support and help is done on Discord only. Bug reports can be done here or on Discord.
