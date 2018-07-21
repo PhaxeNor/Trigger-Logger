@@ -16,6 +16,8 @@ namespace VRCP.TriggerLogger
 {
 	public class TriggerLogger : EditorWindow {
 
+        string VERSION = "0.2";
+
         bool showSettings = false;
 
         GUIStyle centeredStyle;
@@ -154,7 +156,7 @@ namespace VRCP.TriggerLogger
 
             GUILayout.BeginArea(new Rect(0, 408, 300, 90), new GUIStyle(GUI.skin.box));
 
-            GUILayout.Label("Created by PhaxeNor");
+            GUILayout.Label("Created by PhaxeNor. V" + VERSION);
 
             if (GUILayout.Button("Discord"))
             {
