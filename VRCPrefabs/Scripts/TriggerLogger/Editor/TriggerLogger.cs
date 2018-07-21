@@ -561,13 +561,6 @@ Filling the list is done using STANDARD Unity code.");
 
 			triggerList.AddRange (Resources.FindObjectsOfTypeAll<VRC_Trigger>());
 
-            var dynamicPrefab = FindObjectOfType<VRC_SceneDescriptor> ();
-
-            if(dynamicPrefab)
-            {
-                dynamicPrefabs.AddRange(dynamicPrefab.DynamicPrefabs);
-            }
-
 			triggerList.ForEach (delegate (VRC_Trigger trigger) {
 
 				if(trigger.gameObject.scene.name == null)
