@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Linq;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 using UnityEditor;
-using UnityEditor.IMGUI.Controls;
 using VRCSDK2;
 
 /**
