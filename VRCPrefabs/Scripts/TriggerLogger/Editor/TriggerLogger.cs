@@ -230,7 +230,7 @@ Filling the list is done using STANDARD Unity code.");
 
             triggerFilter = EditorGUILayout.Popup("Trigger", triggerFilter, triggerTypes.ToArray());
 
-            broadFilter = EditorGUILayout.Popup("Broadcast", broadFilter, broadcastEvents.ToArray());
+            broadFilter = EditorGUILayout.Popup("Buffer", broadFilter, broadcastEvents.ToArray());
 
             canBeOptimized = EditorGUILayout.Toggle("Can be optimzied", canBeOptimized);
 
