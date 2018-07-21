@@ -519,7 +519,7 @@ Filling the list is done using STANDARD Unity code.");
 
 				if (!isCustomLocal) {
                     GUILayout.BeginHorizontal();
-                    GUILayout.Label("Normaly custom triggers should be local, but that is not always the case.", alignTextLeft);
+                    GUILayout.Label("Normally custom triggers should be local, but that is not always the case.", alignTextLeft);
                     if (GUILayout.Button("Click here for more info", GUI.skin.label))
                     {
                         Application.OpenURL("https://github.com/PhaxeNor/Trigger-Logger/wiki/Custom-Triggers");
