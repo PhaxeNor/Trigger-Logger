@@ -358,6 +358,7 @@ Filling the list is done using STANDARD Unity code.");
                 emptyTriggers = false;
                 alwaysExpand = false;
                 alwaysExpandButton = "Expand All";
+                expanded.Clear();
 
                 Repaint();
             }
@@ -456,7 +457,7 @@ Filling the list is done using STANDARD Unity code.");
             EditorGUILayout.LabelField ("GameObject", EditorStyles.boldLabel, GUILayout.Width(200));
 			GUILayout.Label("Triggers", alignTextLeft, GUILayout.Width(225));
 			GUILayout.Label("Broadcast", alignTextLeft, GUILayout.Width(210));
-			GUILayout.Label("Receivers", GUILayout.Width(100));
+			GUILayout.Label("Actions", GUILayout.Width(100));
 			GUILayout.Label("RPC", GUILayout.Width(50));
 			GUILayout.EndHorizontal(); 
 
@@ -561,10 +562,10 @@ Filling the list is done using STANDARD Unity code.");
 			int triggers = trigger.Triggers.Count;
 			int receivers = trigger.Triggers.Sum (t => t.Events.Count);
 
-			int rpc = trigger.Triggers
-                .Where (t => t.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local)
-                .Where (c => c.Events.Count >= 1)
-                .Sum (s => s.Events.Count);
+            int rpc = trigger.Triggers
+                .Where(t => t.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local)
+                .Where(c => c.Events.Count >= 1)
+                .Sum(su => su.Events.Sum(s => s.ParameterObjects.Count()));
 
 			int broad = trigger.Triggers
                 .Where (t => t.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local)
@@ -699,7 +700,9 @@ Filling the list is done using STANDARD Unity code.");
                 {
                     if(tr.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local)
                     {
-                        GUILayout.Label(tr.Events.Count.ToString(), alignTextLeft, GUILayout.Width(50));
+                        int receiversCount = tr.Events.Sum(s => s.ParameterObjects.Count());
+
+                        GUILayout.Label(receiversCount.ToString(), alignTextLeft, GUILayout.Width(50));
                     }
                     else
                     {
@@ -812,9 +815,9 @@ Filling the list is done using STANDARD Unity code.");
                         
 					broadcastTypes.list.Where(b => b.type == action.BroadcastType).Select(t => {
 						t.total += 1;
-						if(action.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local) 
-							t.rpc += rpcs;
-						return t;
+                        if (action.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local)
+                            t.rpc += action.Events.Sum(su => su.ParameterObjects.Count());
+                        return t;
 					}).ToList();
 
 					triggerEvents.list.Where(e => e.type == action.TriggerType).Select(t => {
