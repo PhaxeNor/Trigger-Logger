@@ -11,86 +11,111 @@ using VRCSDK2;
  */
 namespace VRCP.TriggerLogger
 {
-	public class TriggerLogger : EditorWindow {
+    public class TriggerLogger : EditorWindow {
 
-        string VERSION = "0.2";
-
-        bool showSettings = false;
+        readonly string VERSION = "0.3";
 
         GUIStyle centeredStyle;
-		GUIStyle rightStyle;
 
-		List<VRC_Trigger> triggerList = new List<VRC_Trigger> ();
+        List<VRC_Trigger> triggerList = new List<VRC_Trigger>();
 
-        List<GameObject> dynamicPrefabs = new List<GameObject> ();
+        List<GameObject> dynamicPrefabs = new List<GameObject>();
 
-		BroadcastList broadcastTypes = new BroadcastList();
+        BroadcastList broadcastTypes = new BroadcastList();
 
-		TriggerList triggerEvents = new TriggerList();
+        TriggerList triggerEvents = new TriggerList();
 
-		int triggerFilter = 0;
-		List<string> triggerTypes = new List<string>();
-		List<string> broadcastEvents = new List<string> ();
+        List<string> triggerFilter = new List<string>();
+        List<string> broadcastFilter = new List<string>();
 
-		int broadFilter = 0;
+        List<string> triggerTypes = new List<string>();
+        List<string> broadcastEvents = new List<string>();
 
-		string filterGameObjective = "";
+        string filterGameObjective = "";
 
-		bool canBeOptimized = false;
+        bool canBeOptimized = false;
 
-		bool showPrefabs;
+        bool showPrefabs;
+        bool alwaysExpand;
+        string alwaysExpandButton = "Expand All";
+
+        Dictionary<int, bool> expanded = new Dictionary<int, bool>();
 
         [MenuItem("VRC Prefabs/Trigger Logger")]
-		public static void ShowMenu()
-		{
-			EditorWindow window = EditorWindow.GetWindow<TriggerLogger> ("Trigger Logger"); 
-			window.minSize = new Vector2(1300, 500);
-			window.Show ();
-		}
+        public static void ShowMenu()
+        {
+            EditorWindow window = EditorWindow.GetWindow<TriggerLogger>("Trigger Logger");
+            window.maxSize = new Vector2(1150, 9999);
+            window.minSize = new Vector2(1150, 500);
+            window.Show();
+        }
 
-		void OnEnable()
-		{
-			broadcastTypes.initList ();
-			triggerEvents.initList ();
+        void OnEnable()
+        {
+            broadcastTypes.initList();
+            triggerEvents.initList();
 
-			triggerTypes = Enum.GetNames (typeof(VRC_Trigger.TriggerType)).Select (x => x.ToString ()).ToList ();
-			triggerTypes.Insert (0, "Everything");
+            triggerTypes = Enum.GetNames(typeof(VRC_Trigger.TriggerType)).Select(x => x.ToString()).ToList();
 
-			broadcastEvents = Enum.GetNames (typeof(VRC_EventHandler.VrcBroadcastType)).Select (x => x.ToString ()).ToList ();
-			broadcastEvents.Insert (0, "Everything");
+            broadcastEvents = Enum.GetNames(typeof(VRC_EventHandler.VrcBroadcastType)).Select(x => x.ToString()).ToList();
 
-			if(!EditorPrefs.HasKey("TriggerLogger.ShowPrefabs")) {
-				EditorPrefs.SetBool("TriggerLogger.ShowPrefabs", true);
-			} else {
-				showPrefabs = EditorPrefs.GetBool ("TriggerLogger.ShowPrefabs");
-			}
+            if (!EditorPrefs.HasKey("TriggerLogger.ShowPrefabs")) {
+                EditorPrefs.SetBool("TriggerLogger.ShowPrefabs", true);
+            } else {
+                showPrefabs = EditorPrefs.GetBool("TriggerLogger.ShowPrefabs");
+            }
 
-            if(EditorPrefs.GetBool("TriggerLogger.Liability"))
+            if (EditorPrefs.GetBool("TriggerLogger.Liability"))
             {
                 FillList();
             }
         }
 
-		void OnGUI()
-		{
-			centeredStyle = GUI.skin.GetStyle("Label");
-			centeredStyle.alignment = TextAnchor.UpperCenter;
-			centeredStyle.fontStyle = FontStyle.Bold;
-
-            if(EditorPrefs.GetBool("TriggerLogger.Liability"))
+        private void SetFilters()
+        {
+            broadcastEvents.ForEach(b =>
             {
-                FilterPanel();
+                broadcastFilter.Add(b.ToString());
+            });
 
-                if (showSettings)
+            triggerTypes.ForEach(b =>
+            {
+                triggerFilter.Add(b.ToString());
+            });
+        }
+
+        int tab = 1;
+
+        void OnGUI()
+        {
+            centeredStyle = GUI.skin.GetStyle("Label");
+            centeredStyle.alignment = TextAnchor.UpperCenter;
+            centeredStyle.fontStyle = FontStyle.Bold;
+
+            if (EditorPrefs.GetBool("TriggerLogger.Liability"))
+            {
+                GUILayout.BeginArea(new Rect(0, 0, 300, position.height), new GUIStyle(GUI.skin.box));
+
+                tab = GUILayout.Toolbar(tab, new string[] { "Stats", "Actions", "Extra" });
+                switch (tab)
                 {
-                    ExtraPanel();
-                }
-                else
-                {
-                    StatsPanel();
+                    case 0:
+                        StatsPanel();
+                        break;
+
+                    case 1:
+                        FilterPanel();
+                        break;
+
+                    case 2:
+                        ExtraPanel();
+                        break;
                 }
 
-                TriggerViewPanel(); 
+                GUILayout.EndArea();
+
+                TriggerViewPanel();
+
             }
             else
             {
@@ -100,8 +125,6 @@ namespace VRCP.TriggerLogger
 
         private void ExtraPanel()
         {
-            GUILayout.BeginArea(new Rect(0, 201, 300, 100), new GUIStyle(GUI.skin.box));
-
             var guicolor_backup = GUI.backgroundColor;
 
             EditorGUILayout.LabelField("Help", centeredStyle);
@@ -109,49 +132,45 @@ namespace VRCP.TriggerLogger
             GUI.backgroundColor = Color.yellow;
             GUILayout.BeginHorizontal("helpbox");
 
-                GUILayout.Label("Information");
+            GUILayout.Label("Information");
 
             GUILayout.EndHorizontal();
 
             GUI.backgroundColor = Color.grey;
             GUILayout.BeginHorizontal("helpbox");
-                
-                GUILayout.Label("Disabled");
+
+            GUILayout.Label("Disabled");
 
             GUILayout.EndHorizontal();
 
             GUI.backgroundColor = Color.cyan;
             GUILayout.BeginHorizontal("helpbox");
 
-                GUILayout.Label("Prefabs");
+            GUILayout.Label("Prefabs");
 
             GUILayout.EndHorizontal();
 
             GUI.backgroundColor = guicolor_backup;
 
-            GUILayout.EndArea();
+            DrawUILine(Color.gray);
 
-            GUILayout.BeginArea(new Rect(0, 305, 300, 100), new GUIStyle(GUI.skin.box));
+            GUILayout.Space(10);
 
             EditorGUILayout.LabelField("Extras", centeredStyle);
 
             GUILayout.Space(10);
 
-            if(GUILayout.Button("VRCat Forums - World Building"))
+            if (GUILayout.Button("VRCat Forums - World Building"))
             {
                 Application.OpenURL("https://vrcat.club/forums/world-building.7/");
             }
 
             GUILayout.Space(10);
 
-            if(GUILayout.Button("Show Terms of Services"))
+            if (GUILayout.Button("Show Terms of Services"))
             {
                 EditorPrefs.SetBool("TriggerLogger.Liability", false);
             }
-
-            GUILayout.EndArea();
-
-            GUILayout.BeginArea(new Rect(0, 408, 300, 90), new GUIStyle(GUI.skin.box));
 
             GUILayout.Label("Created by PhaxeNor. V" + VERSION);
 
@@ -169,8 +188,6 @@ namespace VRCP.TriggerLogger
             {
                 Application.OpenURL("https://github.com/PhaxeNor/Trigger-Logger");
             }
-
-            GUILayout.EndArea();
         }
 
         private void ShowLiabilityPanel()
@@ -201,7 +218,7 @@ Filling the list is done using STANDARD Unity code.");
 
             GUILayout.Space(10);
 
-            if(GUILayout.Button("I Accept"))
+            if (GUILayout.Button("I Accept"))
             {
                 EditorPrefs.SetBool("TriggerLogger.Liability", true);
                 FillList();
@@ -211,16 +228,31 @@ Filling the list is done using STANDARD Unity code.");
         }
 
         bool showTrigger = true;
-		bool showBroadcast = true;
+        bool showBroadcast = true;
 
-		Vector2 scrollPosLeft;
+        Vector2 scrollPosLeft;
 
-        string extraButton = "Show Help/Extra";
+
+
+        List<string> triggerSelected = new List<string>();
+
+        public void Callback(object value)
+        {
+             if(triggerSelected.Contains(value.ToString()))
+            {
+                triggerSelected.Remove(value.ToString());
+            }
+            else
+            {
+                triggerSelected.Add(value.ToString());
+            }
+        }
+
+        int triggerFlags = -1;
+        int broadcastFlags = -1;
 
         void FilterPanel()
         {
-            GUILayout.BeginArea(new Rect(0, 0, 300, 197), new GUIStyle(GUI.skin.box));
-
             EditorGUILayout.LabelField("Filters", centeredStyle);
 
             if (triggerList.Count == 0)
@@ -228,11 +260,61 @@ Filling the list is done using STANDARD Unity code.");
 
             filterGameObjective = EditorGUILayout.TextField("GameObject", filterGameObjective);
 
-            triggerFilter = EditorGUILayout.Popup("Trigger", triggerFilter, triggerTypes.ToArray());
+            var tArray = triggerTypes.ToArray();
 
-            broadFilter = EditorGUILayout.Popup("Broadcast", broadFilter, broadcastEvents.ToArray());
+            int oldTriggerflags = triggerFlags;
+
+            triggerFlags = EditorGUILayout.MaskField("Triggers", triggerFlags, tArray);
+
+            if(triggerFlags != oldTriggerflags)
+            {
+                triggerFilter.Clear();
+                for (int i = 0; i < tArray.Length; i++)
+                {
+                    if ((triggerFlags & (1 << i)) == (1 << i)) triggerFilter.Add(tArray[i]);
+                }
+            }
+
+            var bArray = broadcastEvents.ToArray();
+
+            int oldBroadcastFlags = broadcastFlags;
+
+            broadcastFlags = EditorGUILayout.MaskField("Broadcast", broadcastFlags, bArray);
+
+            if (broadcastFlags != oldBroadcastFlags)
+            {
+                broadcastFilter.Clear();
+                for (int i = 0; i < bArray.Length; i++)
+                {
+                    if ((broadcastFlags & (1 << i)) == (1 << i)) broadcastFilter.Add(bArray[i]);
+                }
+            }
 
             canBeOptimized = EditorGUILayout.Toggle("Can be optimzied", canBeOptimized);
+
+            GUILayout.Space(10);
+
+            if (GUILayout.Button(alwaysExpandButton, GUILayout.Height(20)))
+            {
+                alwaysExpand = alwaysExpand ? false : true;
+                alwaysExpandButton = alwaysExpandButton == "Expand All" ? "Minimize All" : "Expand All";
+                expanded.Clear();
+            }
+
+            if (GUILayout.Button("Reset", GUILayout.Height(20)))
+            {
+                triggerFlags = -1;
+                broadcastFlags = -1;
+                SetFilters();
+                filterGameObjective = "";
+                canBeOptimized = false;
+                alwaysExpand = false;
+                alwaysExpandButton = "Expand All";
+
+                Repaint();
+            }
+
+            GUILayout.Space(10);
 
             showPrefabs = EditorGUILayout.Toggle("Show Prefabs", showPrefabs);
 
@@ -245,52 +327,18 @@ Filling the list is done using STANDARD Unity code.");
                 EditorPrefs.SetBool("TriggerLogger.ShowPrefabs", showPrefabs);
             }
 
-            GUILayout.Space(10);
-
-            if (GUILayout.Button("Reset", GUILayout.Height(20)))
-            {
-                triggerFilter = 0;
-                broadFilter = 0;
-                filterGameObjective = "";
-                canBeOptimized = false;
-            }
-
-            GUILayout.Space(5);
-
-            if (GUILayout.Button("Export"))
+            if (GUI.Button(new Rect(5, position.height - 25, 290, 20), "Export to Text"))
             {
                 Export export = new Export();
                 export.ExportToTxt(triggerList);
             }
 
-            
-
-            if(GUILayout.Button(extraButton))
-            {
-                if (showSettings)
-                {
-                    showSettings = false;
-                    extraButton = "Show Help/Extra";
-                }
-                else
-                {
-                    showSettings = true;
-                    extraButton = "Hide Help/Extra";
-                }
-
-                Repaint();
-            }
-
             GUI.enabled = true;
-
-            GUILayout.EndArea();
         }
 
 		void StatsPanel()
 		{
 			/** STATS AREA **/
-			GUILayout.BeginArea(new Rect(0, 202, 300, position.height - 200), new GUIStyle( GUI.skin.box ));
-
 			scrollPosLeft = EditorGUILayout.BeginScrollView(scrollPosLeft);
 
 			GUIStyle style = EditorStyles.foldout;
@@ -299,7 +347,6 @@ Filling the list is done using STANDARD Unity code.");
 
 			showBroadcast = EditorGUILayout.Foldout(showBroadcast, "Broadcast (" + broadcastTypes.list.Sum(t => t.total) + "/"+ broadcastTypes.list.Sum(t => t.rpc) +")");
 			if (showBroadcast) {
-
 				EditorGUILayout.BeginHorizontal ();
 				EditorGUIUtility.labelWidth = 83f;
 				EditorGUILayout.LabelField ("Type", EditorStyles.boldLabel);
@@ -307,14 +354,13 @@ Filling the list is done using STANDARD Unity code.");
 				EditorGUILayout.LabelField ("Total / RPC", EditorStyles.boldLabel);
 				EditorGUILayout.EndHorizontal ();
 
-				addBroadcastRows (broadcastTypes.list);
+				AddStatsBroadcastRow (broadcastTypes.list);
 			}
 
 			GUILayout.Space (5);
 
 			showTrigger = EditorGUILayout.Foldout(showTrigger, "Trigger (" + triggerEvents.list.Sum(t => t.total) + ")");
 			if (showTrigger) {
-
 				EditorGUILayout.BeginHorizontal ();
 				EditorGUIUtility.labelWidth = 125f;
 				EditorGUILayout.LabelField ("Type", EditorStyles.boldLabel);
@@ -322,16 +368,12 @@ Filling the list is done using STANDARD Unity code.");
 				EditorGUILayout.LabelField ("Total", EditorStyles.boldLabel);
 				EditorGUILayout.EndHorizontal ();
 
-				GUILayout.Space (5);
-
-				AddTriggerRows (triggerEvents.list);
-			}
+                AddStatsTriggerRow(triggerEvents.list);
+            }
 
 			style.fontStyle = previousStyle;
 
 			EditorGUILayout.EndScrollView();
-
-			GUILayout.EndArea();
 		}
 
 		Vector2 scrollPosRight;
@@ -346,18 +388,17 @@ Filling the list is done using STANDARD Unity code.");
 				return;
 			}
 
-			GUILayout.BeginArea(new Rect(305, 0, position.width - 305, position.height), new GUIStyle( GUI.skin.box ));
+			GUILayout.BeginArea(new Rect(305, 0, 850, position.height), new GUIStyle( GUI.skin.box ));
 
 			GUIStyle alignTextLeft = new GUIStyle( GUI.skin.label );
 			alignTextLeft.alignment = TextAnchor.MiddleLeft;
 
 			GUILayout.BeginHorizontal();
-			EditorGUILayout.LabelField ("GameObject", EditorStyles.boldLabel, GUILayout.Width(200));
-			GUILayout.Label("Triggers", alignTextLeft, GUILayout.Width(350));
-			GUILayout.Label("Broadcast", alignTextLeft, GUILayout.MinWidth(160));
-			GUILayout.Label("Receivers", GUILayout.Width(70));
+            EditorGUILayout.LabelField ("GameObject", EditorStyles.boldLabel, GUILayout.Width(200));
+			GUILayout.Label("Triggers", alignTextLeft, GUILayout.Width(225));
+			GUILayout.Label("Broadcast", alignTextLeft, GUILayout.Width(210));
+			GUILayout.Label("Receivers", GUILayout.Width(100));
 			GUILayout.Label("RPC", GUILayout.Width(50));
-			GUILayout.Label("Is Enabled", GUILayout.Width(75));
 			GUILayout.EndHorizontal(); 
 
 			DrawUILine (Color.gray);
@@ -365,28 +406,25 @@ Filling the list is done using STANDARD Unity code.");
 			scrollPosRight = EditorGUILayout.BeginScrollView(scrollPosRight);
 
 			if (triggerList.Count > 0) {
-				triggerList.ForEach (delegate (VRC_Trigger trigger) {
+
+                triggerList.ForEach (delegate (VRC_Trigger trigger) {
 					if(trigger == null)
 						return;
 
                     // Text search filter
 					if(filterGameObjective != "" && !trigger.gameObject.name.ToLower().Contains(filterGameObjective.ToLower()))
 						return;
- 
-                    // Trigger and broadcast filter
-                    if (triggerFilter != 0 || broadFilter != 0) {
 
-                        var triggerType = triggerTypes.ToArray();
-                        var broadcastEvent = broadcastEvents.ToArray();
-
-                        // Both trigger and broadcast filter has been set
-                        if (triggerFilter != 0 && broadFilter != 0 && !trigger.Triggers.Exists(t => (t.TriggerType.ToString() == triggerType[triggerFilter] && t.BroadcastType.ToString() == broadcastEvent[broadFilter])))
+                    if(triggerFlags == 0 || broadcastFlags == 0)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        if (!trigger.Triggers.Exists(t => { return triggerFilter.Exists(o => t.TriggerType.ToString() == o); }))
                             return;
 
-                        if (triggerFilter != 0 && !trigger.Triggers.Exists(t => t.TriggerType.ToString() == triggerType[triggerFilter]))
-                            return;
-
-                        if (broadFilter != 0 && !trigger.Triggers.Exists(t => t.BroadcastType.ToString() == broadcastEvent[broadFilter]))
+                        if (!trigger.Triggers.Exists(t => { return broadcastFilter.Exists(o => t.BroadcastType.ToString() == o); }))
                             return;
                     }
                    
@@ -399,43 +437,44 @@ Filling the list is done using STANDARD Unity code.");
 			GUILayout.EndArea();
 		}
 
-		void addBroadcastRows(List<BroadcastItem> broadcastlist)
-		{
-			broadcastlist.ForEach (delegate (BroadcastItem item) {
-				if(item.total > 0)
-					AddBroadcastRow (item.getTypeName(), item.total, item.rpc);
-			});
-		}
+        /**
+         * Add a row to the broadcast stats list
+         */ 
+        void AddStatsBroadcastRow(List<BroadcastItem> broadcastlist)
+        {
+            broadcastlist.ForEach(delegate (BroadcastItem item)
+            {
+                if (item.total > 0)
+                {
+                    DrawUILine(Color.gray);
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUIUtility.labelWidth = 130f;
+                    EditorGUILayout.LabelField(item.getTypeName());
+                    EditorGUIUtility.labelWidth = 1f;
+                    EditorGUILayout.LabelField(item.total + " / " + item.rpc);
+                    EditorGUILayout.EndHorizontal();
+                }
+            });
+        }
 
-		void AddBroadcastRow(string name, int total, int rpc)
+        /***
+         * Add a row to the trigger stats List
+         */
+        private void AddStatsTriggerRow(List<TriggerItem> trigger)
 		{
-			DrawUILine (Color.gray);
-			EditorGUILayout.BeginHorizontal ();
-			EditorGUIUtility.labelWidth = 130f;
-			EditorGUILayout.LabelField (name);
-			EditorGUIUtility.labelWidth = 1f;
-			EditorGUILayout.LabelField (total + " / " + rpc);
-			EditorGUILayout.EndHorizontal ();
-		}
-
-		void AddTriggerRows(List<TriggerItem> trigger)
-		{
-			trigger.ForEach (delegate (TriggerItem item) {
-				if(item.total > 0)
-					AddTriggerRow(item.getTypeName(), item.total);	
-			});
-
-		}
-
-		void AddTriggerRow(string name, int count)
-		{
-			DrawUILine (Color.gray);
-			EditorGUILayout.BeginHorizontal ();
-			EditorGUIUtility.labelWidth = 150f;
-			EditorGUILayout.LabelField (name);
-			EditorGUIUtility.labelWidth = 0.1f;
-			EditorGUILayout.LabelField (count.ToString());
-			EditorGUILayout.EndHorizontal ();
+            trigger.ForEach(delegate (TriggerItem item)
+            {
+                if (item.total > 0)
+                {
+                    DrawUILine(Color.gray);
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUIUtility.labelWidth = 150f;
+                    EditorGUILayout.LabelField(item.getTypeName());
+                    EditorGUIUtility.labelWidth = 0.1f;
+                    EditorGUILayout.LabelField(item.total.ToString());
+                    EditorGUILayout.EndHorizontal();
+                }
+            });
 		}
 
 		void TriggerRow(VRC_Trigger trigger)
@@ -457,7 +496,8 @@ Filling the list is done using STANDARD Unity code.");
 
 			bool isCustomLocal = trigger.Triggers
 				.Where (t => t.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local)
-				.Where (t => t.TriggerType == VRC_Trigger.TriggerType.Custom).Count () == 0;
+				.Where (t => t.TriggerType == VRC_Trigger.TriggerType.Custom)
+                .Where (t => t.Events.Count() > 2).Count () == 0;
 
 			bool isEnabled = true;
 			if ((!trigger.gameObject.activeInHierarchy || !trigger.isActiveAndEnabled) && trigger.gameObject.scene.name != null)
@@ -477,38 +517,123 @@ Filling the list is done using STANDARD Unity code.");
 				GUI.backgroundColor = Color.cyan; // CyanLaser
 			}
 
-			var triggerTypes = trigger.Triggers.Select (t => { return t.TriggerType.ToString(); }).ToList ();
+            GUILayout.BeginHorizontal("helpbox");
 
-			GUILayout.BeginHorizontal("helpbox");
-
-			EditorGUILayout.ObjectField (trigger.gameObject, typeof(GameObject), true, GUILayout.Width(190));
+            EditorGUILayout.ObjectField (trigger.gameObject, typeof(GameObject), true, GUILayout.Width(190));
 
 			GUIStyle alignTextLeft = new GUIStyle( GUI.skin.label );
 			alignTextLeft.alignment = TextAnchor.MiddleLeft;
 			alignTextLeft.stretchWidth = true;
 
-			string triggerString = string.Join (", ", triggerTypes.ToArray ());
+            /** Trigger List **/
+            GUILayout.BeginVertical();
 
-			GUILayout.Label(triggerString, alignTextLeft, GUILayout.Width(350));
+            if (expanded.ContainsKey(trigger.gameObject.GetInstanceID()) || alwaysExpand)
+            {
+                //foreach (string tt in triggerTypes)
+                trigger.Triggers.ForEach(t => {
 
-			var broadcastTypes = trigger.Triggers.Select (t => { return t.BroadcastType.ToString(); }).ToList ();
-			string broadcastString = string.Join (", ", broadcastTypes.ToArray ());
+                    if (t.TriggerType == VRC_Trigger.TriggerType.Custom)
+                    {
+                        GUILayout.Label(t.TriggerType.ToString() + " (" + t.Name + ")", alignTextLeft, GUILayout.Width(200));
+                    }
+                    else
+                    {
+                        GUILayout.Label(t.TriggerType.ToString(), alignTextLeft, GUILayout.Width(200));
+                    }
+                });
+            }
+            else
+            {
+                GUILayout.Label("", alignTextLeft, GUILayout.Width(200));
+            }
 
-			GUILayout.Label(broadcastString, alignTextLeft);
+            GUILayout.EndVertical();
 
-			GUILayout.Label(receivers.ToString(), GUILayout.Width(70));
-			GUILayout.Label(rpc.ToString(), GUILayout.Width(50));
-			GUILayout.Label(isEnabled.ToString(), GUILayout.Width(75));
+            /** Broadcast List **/
+            GUILayout.BeginVertical();
 
-			GUILayout.EndHorizontal(); 
+            if (expanded.ContainsKey(trigger.gameObject.GetInstanceID()) || alwaysExpand)
+            {
+                trigger.Triggers.ForEach(t => {
 
-			if (rpc > broad || !isCustomLocal) {
+                    GUILayout.Label(t.BroadcastType.ToString(), alignTextLeft, GUILayout.Width(240));
+
+                });
+            }
+            else
+            {
+                GUILayout.Label("", alignTextLeft, GUILayout.Width(200));
+            }
+
+            GUILayout.EndVertical();
+
+            /** Receivers List **/
+            GUILayout.BeginVertical();
+
+            if (expanded.ContainsKey(trigger.gameObject.GetInstanceID()) || alwaysExpand)
+            {
+
+                trigger.Triggers.ForEach(tr =>
+                {
+                    GUILayout.Label(tr.Events.Count.ToString(), alignTextLeft, GUILayout.Width(59));
+                });
+            }
+            else
+            {
+                GUILayout.Label(receivers.ToString(), GUILayout.Width(50));
+            }
+
+            GUILayout.EndVertical();
+
+            /** Begin RPC List **/
+            GUILayout.BeginVertical();
+
+            if (expanded.ContainsKey(trigger.gameObject.GetInstanceID()) || alwaysExpand)
+            {
+                trigger.Triggers.ForEach(tr =>
+                {
+                    if(tr.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local)
+                    {
+                        GUILayout.Label(tr.Events.Count.ToString(), alignTextLeft, GUILayout.Width(50));
+                    }
+                    else
+                    {
+                        GUILayout.Label("0", alignTextLeft, GUILayout.Width(50));
+                    }
+                });
+            }
+            else
+            {
+                GUILayout.Label(rpc.ToString(), GUILayout.Width(50));
+            }
+
+            GUILayout.EndVertical();
+
+			GUILayout.EndHorizontal();
+
+            if (Event.current.type == EventType.MouseDown && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+            {
+                if(expanded.ContainsKey(trigger.gameObject.GetInstanceID()))
+                {
+                    expanded.Remove(trigger.gameObject.GetInstanceID());
+                    Repaint();
+                    
+                }
+                else
+                {
+                    expanded.Add(trigger.gameObject.GetInstanceID(), true);
+                    Repaint();
+                }
+            }
+
+            if (rpc > broad || !isCustomLocal) {
 
 				GUILayout.BeginVertical ("box");
 
 				if (rpc > broad) {
 					GUILayout.BeginHorizontal ();
-					GUILayout.Label ("Buffer triggers that have 3 or more receivers should utilize custom triggers.", alignTextLeft);
+					GUILayout.Label ("A trigger with Buffer Broadcast have multiple receievers.", alignTextLeft, GUILayout.MaxWidth(600));
 					if(GUILayout.Button("Click here for more info", GUI.skin.label)) {
 						Application.OpenURL("https://github.com/PhaxeNor/Trigger-Logger/wiki/Buffer-Triggers");
 					}
@@ -519,7 +644,7 @@ Filling the list is done using STANDARD Unity code.");
 
 				if (!isCustomLocal) {
                     GUILayout.BeginHorizontal();
-                    GUILayout.Label("Normally custom triggers should be local, but that is not always the case.", alignTextLeft);
+                    GUILayout.Label("A Custom trigger with Buffer Broadcast has multiple receievers.", alignTextLeft, GUILayout.MaxWidth(600));
                     if (GUILayout.Button("Click here for more info", GUI.skin.label))
                     {
                         Application.OpenURL("https://github.com/PhaxeNor/Trigger-Logger/wiki/Custom-Triggers");
@@ -529,22 +654,19 @@ Filling the list is done using STANDARD Unity code.");
 				}
 
 				GUILayout.EndVertical ();
-
-
-
-
 			}
 
-			GUI.backgroundColor = guicolor_backup;
+
+            GUI.backgroundColor = guicolor_backup;
 		}
 
-		public static void DrawUILine(Color color, int thickness = 1, int padding = 1)
+		public static void DrawUILine(Color color, int width = 6, int thickness = 1, int padding = 1)
 		{
 			Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(padding+thickness));
 			r.height = thickness;
 			r.y+=padding/2;
-			r.x-=2;
-			r.width +=6;
+			r.x-=1;
+			r.width +=width;
 			EditorGUI.DrawRect(r, color);
 		}
 
@@ -571,7 +693,7 @@ Filling the list is done using STANDARD Unity code.");
 						triggerEvents.emptyTrigger.Add(trigger);
 						return;
 					}
-
+                        
 					broadcastTypes.list.Where(b => b.type == action.BroadcastType).Select(t => {
 						t.total += 1;
 						if(action.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local) 
@@ -595,3 +717,4 @@ Filling the list is done using STANDARD Unity code.");
 		}
 	}
 }
+ 
