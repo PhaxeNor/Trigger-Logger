@@ -25,11 +25,15 @@ namespace VRCP.TriggerLogger
 
         TriggerList triggerEvents = new TriggerList();
 
+        ActionList actionEvents = new ActionList();
+
         List<string> triggerFilter = new List<string>();
         List<string> broadcastFilter = new List<string>();
+        List<string> actionFilter = new List<string>();
 
         List<string> triggerTypes = new List<string>();
         List<string> broadcastEvents = new List<string>();
+        List<string> actionTypes = new List<string>();
 
         string filterGameObjective = "";
 
@@ -54,12 +58,13 @@ namespace VRCP.TriggerLogger
         {
             broadcastTypes.initList();
             triggerEvents.initList();
+            actionEvents.initList();
 
             triggerTypes = Enum.GetNames(typeof(VRC_Trigger.TriggerType)).Select(x => x.ToString()).ToList();
 
             broadcastEvents = Enum.GetNames(typeof(VRC_EventHandler.VrcBroadcastType)).Select(x => x.ToString()).ToList();
 
-            SetFilters();
+            actionTypes = Enum.GetNames(typeof(VRC_EventHandler.VrcEventType)).Select(x => x.ToString()).ToList();
 
             if (!EditorPrefs.HasKey("TriggerLogger.ShowPrefabs")) {
                 EditorPrefs.SetBool("TriggerLogger.ShowPrefabs", true);
@@ -84,6 +89,13 @@ namespace VRCP.TriggerLogger
             {
                 triggerFilter.Add(b.ToString());
             });
+
+            actionTypes.ForEach(b =>
+            {
+                actionFilter.Add(b.ToString());
+            });
+
+
         }
 
         int tab = 1;
@@ -231,6 +243,7 @@ Filling the list is done using STANDARD Unity code.");
 
         bool showTrigger = true;
         bool showBroadcast = true;
+        bool showActions = true;
 
         Vector2 scrollPosLeft;
 
@@ -252,6 +265,7 @@ Filling the list is done using STANDARD Unity code.");
 
         int triggerFlags = -1;
         int broadcastFlags = -1;
+        int actionFlags = -1;
 
         void FilterPanel()
         {
@@ -292,9 +306,28 @@ Filling the list is done using STANDARD Unity code.");
                 }
             }
 
+            var aArray = actionTypes.ToArray();
+
+            int oldActionFlags = actionFlags;
+
+            actionFlags = EditorGUILayout.MaskField("Actions", actionFlags, aArray);
+
+            if (actionFlags != oldActionFlags)
+            {
+                actionFilter.Clear();
+                for (int i = 0; i < aArray.Length; i++)
+                {
+                    if ((actionFlags & (1 << i)) == (1 << i)) actionFilter.Add(aArray[i]);
+                }
+            }
+
             canBeOptimized = EditorGUILayout.Toggle("Can be optimzied", canBeOptimized);
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
+
+            showPrefabs = EditorGUILayout.Toggle("Show Prefabs", showPrefabs);
+
+            GUILayout.Space(5);
 
             if (GUILayout.Button(alwaysExpandButton, GUILayout.Height(20)))
             {
@@ -307,6 +340,7 @@ Filling the list is done using STANDARD Unity code.");
             {
                 triggerFlags = -1;
                 broadcastFlags = -1;
+                actionFlags = -1;
                 SetFilters();
                 filterGameObjective = "";
                 canBeOptimized = false;
@@ -315,10 +349,6 @@ Filling the list is done using STANDARD Unity code.");
 
                 Repaint();
             }
-
-            GUILayout.Space(10);
-
-            showPrefabs = EditorGUILayout.Toggle("Show Prefabs", showPrefabs);
 
             if (showPrefabs)
             {
@@ -373,7 +403,22 @@ Filling the list is done using STANDARD Unity code.");
                 AddStatsTriggerRow(triggerEvents.list);
             }
 
-			style.fontStyle = previousStyle;
+            GUILayout.Space(5);
+
+            showActions = EditorGUILayout.Foldout(showActions, "Actions (" + actionEvents.list.Sum(t => t.total) + ")");
+            if (showActions)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUIUtility.labelWidth = 125f;
+                EditorGUILayout.LabelField("Type", EditorStyles.boldLabel);
+                EditorGUIUtility.labelWidth = 0.1f;
+                EditorGUILayout.LabelField("Total", EditorStyles.boldLabel);
+                EditorGUILayout.EndHorizontal();
+
+                AddStatsActionRow(actionEvents.list);
+            }
+
+            style.fontStyle = previousStyle;
 
 			EditorGUILayout.EndScrollView();
 		}
@@ -417,16 +462,16 @@ Filling the list is done using STANDARD Unity code.");
 					if(filterGameObjective != "" && !trigger.gameObject.name.ToLower().Contains(filterGameObjective.ToLower()))
 						return;
 
-                    if(triggerFlags == 0 || broadcastFlags == 0)
+                    // if(triggerFlags != 0 || triggerFlags != -1 || broadcastFlags != 0 || broadcastFlags != -1)
+                    if (triggerFlags != 0 || broadcastFlags != 0 || actionFlags != 0)
                     {
-                        return;
-                    }
-                    else
-                    {
-                        if (!trigger.Triggers.Exists(t => { return triggerFilter.Exists(o => t.TriggerType.ToString() == o); }))
+                        if (triggerFlags != 0 && triggerFlags != -1 && !trigger.Triggers.Exists(t => { return triggerFilter.Exists(o => t.TriggerType.ToString() == o); }))
                             return;
 
-                        if (!trigger.Triggers.Exists(t => { return broadcastFilter.Exists(o => t.BroadcastType.ToString() == o); }))
+                        if (broadcastFlags != 0 && broadcastFlags != -1 && !trigger.Triggers.Exists(t => { return broadcastFilter.Exists(o => t.BroadcastType.ToString() == o); }))
+                            return;
+
+                        if (actionFlags != 0 && actionFlags != -1 && !trigger.Triggers.Exists(t => { return t.Events.Exists(e => actionFilter.Exists(o => e.EventType.ToString() == o)); }))
                             return;
                     }
                    
@@ -479,7 +524,24 @@ Filling the list is done using STANDARD Unity code.");
             });
 		}
 
-		void TriggerRow(VRC_Trigger trigger)
+        private void AddStatsActionRow(List<ActionItem> trigger)
+        {
+            trigger.ForEach(delegate (ActionItem item)
+            {
+                if (item.total > 0)
+                {
+                    DrawUILine(Color.gray);
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUIUtility.labelWidth = 150f;
+                    EditorGUILayout.LabelField(item.getTypeName());
+                    EditorGUIUtility.labelWidth = 0.1f;
+                    EditorGUILayout.LabelField(item.total.ToString());
+                    EditorGUILayout.EndHorizontal();
+                }
+            });
+        }
+
+        void TriggerRow(VRC_Trigger trigger)
 		{
 			if (!showPrefabs && trigger.gameObject.scene.name == null)
 				return;
@@ -676,8 +738,9 @@ Filling the list is done using STANDARD Unity code.");
 		{
 			broadcastTypes.initList ();
 			triggerEvents.initList ();
+            actionEvents.initList();
 
-			triggerList.Clear();
+            triggerList.Clear();
             dynamicPrefabs.Clear();
 
 			triggerList.AddRange (Resources.FindObjectsOfTypeAll<VRC_Trigger>());
@@ -707,7 +770,15 @@ Filling the list is done using STANDARD Unity code.");
 						t.total += 1;
 						return t;
 					}).ToList();
-				});
+
+                    action.Events.ForEach(ae =>
+                    {
+                        actionEvents.list.Where(e => e.type == ae.EventType).Select(t => {
+                            t.total += 1;
+                            return t;
+                        }).ToList();
+                    });
+                });
 			});
 
 			triggerList.Reverse ();
