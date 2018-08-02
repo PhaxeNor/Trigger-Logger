@@ -39,6 +39,8 @@ namespace VRCP.TriggerLogger
 
         bool canBeOptimized = false;
 
+        bool emptyTriggers = false;
+
         bool showPrefabs;
         bool alwaysExpand;
         string alwaysExpandButton = "Expand All";
@@ -161,6 +163,13 @@ namespace VRCP.TriggerLogger
             GUILayout.BeginHorizontal("helpbox");
 
             GUILayout.Label("Prefabs");
+
+            GUILayout.EndHorizontal();
+
+            GUI.backgroundColor = Color.red;
+            GUILayout.BeginHorizontal("helpbox");
+
+            GUILayout.Label("Empty Action/Receiver");
 
             GUILayout.EndHorizontal();
 
@@ -323,6 +332,8 @@ Filling the list is done using STANDARD Unity code.");
 
             canBeOptimized = EditorGUILayout.Toggle("Can be optimzied", canBeOptimized);
 
+            emptyTriggers = EditorGUILayout.Toggle("Empty Triggers", emptyTriggers);
+
             GUILayout.Space(5);
 
             showPrefabs = EditorGUILayout.Toggle("Show Prefabs", showPrefabs);
@@ -344,6 +355,7 @@ Filling the list is done using STANDARD Unity code.");
                 SetFilters();
                 filterGameObjective = "";
                 canBeOptimized = false;
+                emptyTriggers = false;
                 alwaysExpand = false;
                 alwaysExpandButton = "Expand All";
 
@@ -558,6 +570,32 @@ Filling the list is done using STANDARD Unity code.");
                 .Where (t => t.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local)
                 .Count ();
 
+            int receiver = 0;
+            int emptyReceivers = 0;
+
+            trigger.Triggers.ForEach(t =>
+            {
+                receiver += t.Events.Sum(s => s.ParameterObjects.Count());
+
+                t.Events.ForEach(e => {
+
+                    if(e.ParameterObjects.Count() == 0)
+                    {
+                        emptyReceivers += 1;
+                    }
+
+                    foreach(var o in e.ParameterObjects)
+                    {
+                        if(!o || o == null)
+                        {
+                            emptyReceivers += 1;
+                        }
+                    }
+                    //emptyReceivers += e.ParameterObjects.ToList().Where(s => s == null).Count();
+                    // Debug.Log(trigger.name + " - " + emptyReceivers);
+                });
+            });
+
 			bool isCustomLocal = trigger.Triggers
 				.Where (t => t.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local)
 				.Where (t => t.TriggerType == VRC_Trigger.TriggerType.Custom)
@@ -569,17 +607,19 @@ Filling the list is done using STANDARD Unity code.");
 
 			var guicolor_backup = GUI.backgroundColor;
 
-			if (rpc > broad || !isCustomLocal) {
-				GUI.backgroundColor = Color.yellow;
-			} else if (canBeOptimized) {
-				return;
-			}
-
-			if (!isEnabled) {
-				GUI.backgroundColor = Color.grey;
-			} else if (trigger.gameObject.scene.name == null) {
-				GUI.backgroundColor = Color.cyan; // CyanLaser
-			}
+            if (receiver == 0 || emptyReceivers > 0) {
+                GUI.backgroundColor = Color.red;
+            } else if (emptyTriggers && receiver != 0 || emptyTriggers && emptyReceivers == 0) {
+                return;
+            } else if (rpc > broad || !isCustomLocal) {
+                GUI.backgroundColor = Color.yellow;
+            } else if (canBeOptimized) {
+                return;
+            } else if (!isEnabled) {
+                GUI.backgroundColor = Color.grey;
+            } else if (trigger.gameObject.scene.name == null) {
+                GUI.backgroundColor = Color.cyan; // CyanLaser
+            }
 
             GUILayout.BeginHorizontal("helpbox");
 
@@ -691,13 +731,24 @@ Filling the list is done using STANDARD Unity code.");
                 }
             }
 
-            if (rpc > broad || !isCustomLocal) {
+            if (rpc > broad || !isCustomLocal || receiver == 0 || emptyReceivers > 0) {
 
 				GUILayout.BeginVertical ("box");
 
-				if (rpc > broad) {
+                if (receiver == 0 || emptyReceivers > 0)
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("A trigger contain empty action(s) or receiver(s).", alignTextLeft, GUILayout.MaxWidth(600));
+                    if (GUILayout.Button("Click here for more info", GUI.skin.label))
+                    {
+                        Application.OpenURL("https://github.com/PhaxeNor/Trigger-Logger/wiki/Empty-Triggers");
+                    }
+                    GUILayout.EndHorizontal();
+                }
+
+                if (rpc > broad) {
 					GUILayout.BeginHorizontal ();
-					GUILayout.Label ("A trigger with Buffer Broadcast have multiple receievers.", alignTextLeft, GUILayout.MaxWidth(600));
+					GUILayout.Label ("A trigger with Buffer Broadcast have multiple receiver.", alignTextLeft, GUILayout.MaxWidth(600));
 					if(GUILayout.Button("Click here for more info", GUI.skin.label)) {
 						Application.OpenURL("https://github.com/PhaxeNor/Trigger-Logger/wiki/Buffer-Triggers");
 					}
@@ -708,7 +759,7 @@ Filling the list is done using STANDARD Unity code.");
 
 				if (!isCustomLocal) {
                     GUILayout.BeginHorizontal();
-                    GUILayout.Label("A Custom trigger with Buffer Broadcast has multiple receievers.", alignTextLeft, GUILayout.MaxWidth(600));
+                    GUILayout.Label("A Custom trigger with Buffer Broadcast has multiple receiver.", alignTextLeft, GUILayout.MaxWidth(600));
                     if (GUILayout.Button("Click here for more info", GUI.skin.label))
                     {
                         Application.OpenURL("https://github.com/PhaxeNor/Trigger-Logger/wiki/Custom-Triggers");
