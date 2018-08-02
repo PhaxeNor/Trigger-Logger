@@ -59,6 +59,8 @@ namespace VRCP.TriggerLogger
 
             broadcastEvents = Enum.GetNames(typeof(VRC_EventHandler.VrcBroadcastType)).Select(x => x.ToString()).ToList();
 
+            SetFilters();
+
             if (!EditorPrefs.HasKey("TriggerLogger.ShowPrefabs")) {
                 EditorPrefs.SetBool("TriggerLogger.ShowPrefabs", true);
             } else {
