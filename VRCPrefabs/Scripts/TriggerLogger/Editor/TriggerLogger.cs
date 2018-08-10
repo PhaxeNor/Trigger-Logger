@@ -13,7 +13,7 @@ namespace VRCP.TriggerLogger
 {
     public class TriggerLogger : EditorWindow {
 
-        readonly string VERSION = "0.3";
+        readonly string VERSION = "0.3.1";
 
         GUIStyle centeredStyle;
 
@@ -215,7 +215,7 @@ namespace VRCP.TriggerLogger
 
         private void ShowLiabilityPanel()
         {
-            GUILayout.BeginArea(new Rect((Screen.width / 2) - 250, (Screen.height / 2) - 150, 500, 500));
+            GUILayout.BeginArea(new Rect((position.width / 2) - 250, (position.height / 2) - 150, 500, 500));
             GUILayout.Label(
 @"Trigger Logger
 
@@ -442,7 +442,7 @@ Filling the list is done using STANDARD Unity code.");
 		{
 			if (triggerList.Count == 0) {
 				GUILayout.BeginArea (new Rect(305, (position.height / 3), position.height, position.width));
-				GUILayout.Label("Click 'Check Triggers' to display the list");
+				GUILayout.Label("No Triggers Found!");
 				GUILayout.EndArea ();
 
 				return;
