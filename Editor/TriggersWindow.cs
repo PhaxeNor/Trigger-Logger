@@ -45,10 +45,10 @@ namespace VRCPrefabs.TriggerLogger
 
             if (tl.triggerList.Count > 0)
             {
+                var guiColor = GUI.backgroundColor;
 
                 for (var i = 0; i < tl.triggerList.Count; i++)
                 {
-
                     var trigger = tl.triggerList[i];
 
                     List<string> errors = new List<string>();
@@ -63,7 +63,7 @@ namespace VRCPrefabs.TriggerLogger
 
                     if (tl.SendRPCquery != "" && !trigger.Triggers.Exists(t => { return t.Events.Exists(e => e.ParameterString.ToLower().Contains(tl.SendRPCquery.ToLower())); })) continue;
 
-                    if (!tl.ShowEmpty && empty > 0) continue;
+                    if (!tl.ShowEmpty && empty == 0) continue;
 
                     if (tl.triggerFlags == 0 || tl.broadcastFlags == 0 || tl.actionsFlags == 0) continue;
 
@@ -80,7 +80,7 @@ namespace VRCPrefabs.TriggerLogger
                     var events = trigger.Triggers.Sum(t => t.Events.Count);
                     var broadcasts = trigger.Triggers.Where(t => t.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local).Count();
 
-                    var guiColor = GUI.backgroundColor;
+
 
                     if (i % 2 == 1) GUI.backgroundColor = new Color(0.80f, 0.80f, 0.80f, 1f);
 
@@ -113,8 +113,14 @@ namespace VRCPrefabs.TriggerLogger
                         GUI.backgroundColor = new Color(0.047f, 0.564f, 0.929f, 1);
                     }
 
-                    if (errors.Count > 0 && !tl.ShowErrors) continue;
-                    if (errors.Count == 0 && tl.HideNonErrors) continue;
+                    if (errors.Count > 0 && !tl.ShowErrors) {
+                        GUI.backgroundColor = guiColor;
+                        continue;
+                    }
+                    if (errors.Count == 0 && tl.HideNonErrors) {
+                        GUI.backgroundColor = guiColor;
+                        continue;
+                    }
 
                     GUILayout.BeginVertical("helpbox");
 
@@ -128,7 +134,7 @@ namespace VRCPrefabs.TriggerLogger
 
                     GUILayout.Label(broadcasts.ToString(), centeredStyle, GUILayout.Width((float)w2));
 
-                    GUILayout.Label(empty.ToString(), centeredStyle, GUILayout.Width((float)w2));
+                    GUILayout.Label((empty > 0) ? "No" : "Yes", centeredStyle, GUILayout.Width((float)w2));
 
                     GUILayout.EndHorizontal();
 
