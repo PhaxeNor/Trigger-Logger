@@ -43,116 +43,121 @@ namespace VRCPrefabs.TriggerLogger
 
             scrollLocation = EditorGUILayout.BeginScrollView(scrollLocation);
 
-            for (var i = 0; i < tl.triggerList.Count; i++) {
+            if (tl.triggerList.Count > 0)
+            {
 
-                var trigger = tl.triggerList[i];
-
-                List<string> errors = new List<string>();
-
-                if (trigger == null) continue;
-
-                if (!tl.ShowPrefabs && trigger.gameObject.scene.name == null) continue;
-
-                if (tl.query != "" && !trigger.gameObject.name.ToLower().Contains(tl.query.ToLower())) continue;
-
-                var empty = trigger.Triggers.Sum(t => t.Events.Count(e => e.ParameterObjects.Count() > 0));
-
-                if(tl.SendRPCquery != "" && !trigger.Triggers.Exists(t => { return t.Events.Exists(e => e.ParameterString.ToLower().Contains(tl.SendRPCquery.ToLower())); })) continue;
-
-                if (!tl.ShowEmpty && empty > 0) continue;
-
-                if (tl.triggerFlags == 0 || tl.broadcastFlags == 0 || tl.actionsFlags == 0) continue;
-
-                if(tl.triggerFlags != 0 || tl.broadcastFlags != 0 || tl.actionsFlags != 0)
+                for (var i = 0; i < tl.triggerList.Count; i++)
                 {
-                    if (tl.triggerFlags != 0 && tl.triggerFlags != -1 && !trigger.Triggers.Exists(t => { return tl.triggerFilter.Exists(o => t.TriggerType.ToString() == o); })) continue;
-                    if (tl.broadcastFlags != 0 && tl.broadcastFlags != -1 && !trigger.Triggers.Exists(t => { return tl.broadcastFilter.Exists(o => t.BroadcastType.ToString() == o); })) continue;
-                    if (tl.actionsFlags != 0 && tl.actionsFlags != -1 && !trigger.Triggers.Exists(t => { return t.Events.Exists(e => tl.actionFilter.Exists(o => e.EventType.ToString() == o)); })) continue;
 
-                    if (tl.RpcMethodsFlags != 0 && tl.RpcMethodsFlags != -1 && !trigger.Triggers.Exists(t => { return t.Events.Exists(e => tl.RpcMethodsFilter.Exists(o => e.ParameterString.ToString() == o)); })) continue;
-                }
+                    var trigger = tl.triggerList[i];
 
-                var triggers = trigger.Triggers.Count();
-                var events = trigger.Triggers.Sum(t => t.Events.Count);
-                var broadcasts = trigger.Triggers.Where(t => t.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local).Count();
+                    List<string> errors = new List<string>();
 
-                var guiColor = GUI.backgroundColor;
+                    if (trigger == null) continue;
 
-                if (i % 2 == 1) GUI.backgroundColor = new Color(0.80f, 0.80f, 0.80f, 1f);
+                    if (!tl.ShowPrefabs && trigger.gameObject.scene.name == null) continue;
 
-                if (triggers == 0)
-                {
-                    errors.Add("Object has the VRC_Trigger componet, but no triggers");
-                    GUI.backgroundColor = Color.red;
-                }
-                if (!trigger.gameObject.activeInHierarchy || !trigger.isActiveAndEnabled)
-                {
-                    if(trigger.gameObject.scene.name != null) errors.Add("Trigger is disabled");
-                    GUI.backgroundColor = Color.yellow;
-                }
+                    if (tl.query != "" && !trigger.gameObject.name.ToLower().Contains(tl.query.ToLower())) continue;
 
-                if(missingTeleportTo(trigger))
-                {
-                    errors.Add("TeleportTo target is empty");
-                    GUI.backgroundColor = Color.yellow;
-                }
+                    var empty = trigger.Triggers.Sum(t => t.Events.Count(e => e.ParameterObjects.Count() > 0));
 
-                if (empty == 0)
-                {
-                    errors.Add("Trigger doesn't have any actions.");
-                    GUI.backgroundColor = Color.red;
-                }
-                if (trigger.gameObject.scene.name == null) GUI.backgroundColor = Color.cyan;
+                    if (tl.SendRPCquery != "" && !trigger.Triggers.Exists(t => { return t.Events.Exists(e => e.ParameterString.ToLower().Contains(tl.SendRPCquery.ToLower())); })) continue;
 
-                if (Selection.objects.Contains(trigger.gameObject))
-                {
-                    GUI.backgroundColor = new Color(0.047f, 0.564f, 0.929f, 1);
-                }
+                    if (!tl.ShowEmpty && empty > 0) continue;
 
-                if (errors.Count > 0 && !tl.ShowErrors) continue;
-                if (errors.Count == 0 && tl.HideNonErrors) continue;
+                    if (tl.triggerFlags == 0 || tl.broadcastFlags == 0 || tl.actionsFlags == 0) continue;
 
-                GUILayout.BeginVertical("helpbox");
+                    if (tl.triggerFlags != 0 || tl.broadcastFlags != 0 || tl.actionsFlags != 0)
+                    {
+                        if (tl.triggerFlags != 0 && tl.triggerFlags != -1 && !trigger.Triggers.Exists(t => { return tl.triggerFilter.Exists(o => t.TriggerType.ToString() == o); })) continue;
+                        if (tl.broadcastFlags != 0 && tl.broadcastFlags != -1 && !trigger.Triggers.Exists(t => { return tl.broadcastFilter.Exists(o => t.BroadcastType.ToString() == o); })) continue;
+                        if (tl.actionsFlags != 0 && tl.actionsFlags != -1 && !trigger.Triggers.Exists(t => { return t.Events.Exists(e => tl.actionFilter.Exists(o => e.EventType.ToString() == o)); })) continue;
+
+                        if (tl.RpcMethodsFlags != 0 && tl.RpcMethodsFlags != -1 && !trigger.Triggers.Exists(t => { return t.Events.Exists(e => tl.RpcMethodsFilter.Exists(o => e.ParameterString.ToString() == o)); })) continue;
+                    }
+
+                    var triggers = trigger.Triggers.Count();
+                    var events = trigger.Triggers.Sum(t => t.Events.Count);
+                    var broadcasts = trigger.Triggers.Where(t => t.BroadcastType != VRC_EventHandler.VrcBroadcastType.Local).Count();
+
+                    var guiColor = GUI.backgroundColor;
+
+                    if (i % 2 == 1) GUI.backgroundColor = new Color(0.80f, 0.80f, 0.80f, 1f);
+
+                    if (triggers == 0)
+                    {
+                        errors.Add("Object has the VRC_Trigger componet, but no triggers");
+                        GUI.backgroundColor = Color.red;
+                    }
+                    if (!trigger.gameObject.activeInHierarchy || !trigger.isActiveAndEnabled)
+                    {
+                        if (trigger.gameObject.scene.name != null) errors.Add("Trigger is disabled");
+                        GUI.backgroundColor = Color.yellow;
+                    }
+
+                    if (missingTeleportTo(trigger))
+                    {
+                        errors.Add("TeleportTo target is empty");
+                        GUI.backgroundColor = Color.yellow;
+                    }
+
+                    if (empty == 0)
+                    {
+                        errors.Add("Trigger doesn't have any actions.");
+                        GUI.backgroundColor = Color.red;
+                    }
+                    if (trigger.gameObject.scene.name == null) GUI.backgroundColor = Color.cyan;
+
+                    if (Selection.objects.Contains(trigger.gameObject))
+                    {
+                        GUI.backgroundColor = new Color(0.047f, 0.564f, 0.929f, 1);
+                    }
+
+                    if (errors.Count > 0 && !tl.ShowErrors) continue;
+                    if (errors.Count == 0 && tl.HideNonErrors) continue;
+
+                    GUILayout.BeginVertical("helpbox");
 
                     GUILayout.BeginHorizontal();
 
-                        EditorGUILayout.ObjectField(trigger.gameObject, typeof(GameObject), true, GUILayout.Width((float)w1));
+                    EditorGUILayout.ObjectField(trigger.gameObject, typeof(GameObject), true, GUILayout.Width((float)w1));
 
-                        GUILayout.Label(triggers.ToString(), centeredStyle, GUILayout.Width((float)w2));
+                    GUILayout.Label(triggers.ToString(), centeredStyle, GUILayout.Width((float)w2));
 
-                        GUILayout.Label(events.ToString(), centeredStyle, GUILayout.Width((float)w2));
+                    GUILayout.Label(events.ToString(), centeredStyle, GUILayout.Width((float)w2));
 
-                        GUILayout.Label(broadcasts.ToString(), centeredStyle, GUILayout.Width((float)w2));
+                    GUILayout.Label(broadcasts.ToString(), centeredStyle, GUILayout.Width((float)w2));
 
-                        GUILayout.Label(empty.ToString(), centeredStyle, GUILayout.Width((float)w2));
+                    GUILayout.Label(empty.ToString(), centeredStyle, GUILayout.Width((float)w2));
 
                     GUILayout.EndHorizontal();
 
-                if(errors.Count > 0)
-                {
-                    GUILayout.BeginVertical();
-
-                    errors.ForEach(e =>
+                    if (errors.Count > 0)
                     {
-                        GUILayout.Label(e);
-                    });
+                        GUILayout.BeginVertical();
+
+                        errors.ForEach(e =>
+                        {
+                            GUILayout.Label(e);
+                        });
+
+                        GUILayout.EndVertical();
+                    }
 
                     GUILayout.EndVertical();
+
+                    if (Event.current.type == EventType.MouseDown && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    {
+                        GameObject[] selected = new GameObject[1];
+                        selected[0] = trigger.gameObject;
+
+                        Selection.objects = selected;
+
+                        tl.Repaint();
+                    }
+
+                    GUI.backgroundColor = guiColor;
                 }
-
-                GUILayout.EndVertical();
-
-                if (Event.current.type == EventType.MouseDown && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
-                {
-                    GameObject[] selected = new GameObject[1];
-                    selected[0] = trigger.gameObject;
-
-                    Selection.objects = selected;
-
-                    tl.Repaint();
-                }
-
-                GUI.backgroundColor = guiColor;
             }
 
             EditorGUILayout.EndScrollView();

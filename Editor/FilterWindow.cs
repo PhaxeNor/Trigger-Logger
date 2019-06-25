@@ -67,20 +67,23 @@ namespace VRCPrefabs.TriggerLogger
 
             GUILayout.Space(5);
 
-            var oldRPCFalgs = tl.RpcMethodsFlags;
-
-            tl.RpcMethodsFlags = EditorGUILayout.MaskField("SendRPC Methods", tl.RpcMethodsFlags, tl.sendRpcMethods.ToArray());
-
-            if (tl.RpcMethodsFlags != oldRPCFalgs)
+            if(tl.sendRpcMethods.Count > 0)
             {
-                tl.RpcMethodsFilter.Clear();
-                for (int i = 0; i < tl.sendRpcMethods.ToArray().Length; i++)
-                {
-                    if ((tl.RpcMethodsFlags & (1 << i)) == (1 << i)) tl.RpcMethodsFilter.Add(tl.sendRpcMethods.ToArray()[i]);
-                }
-            }
+                var oldRPCFalgs = tl.RpcMethodsFlags;
 
-            GUILayout.Space(5);
+                tl.RpcMethodsFlags = EditorGUILayout.MaskField("SendRPC Methods", tl.RpcMethodsFlags, tl.sendRpcMethods.ToArray());
+
+                if (tl.RpcMethodsFlags != oldRPCFalgs)
+                {
+                    tl.RpcMethodsFilter.Clear();
+                    for (int i = 0; i < tl.sendRpcMethods.ToArray().Length; i++)
+                    {
+                        if ((tl.RpcMethodsFlags & (1 << i)) == (1 << i)) tl.RpcMethodsFilter.Add(tl.sendRpcMethods.ToArray()[i]);
+                    }
+                }
+
+                GUILayout.Space(5);
+            }
 
             UILabel("Advanced");
 
