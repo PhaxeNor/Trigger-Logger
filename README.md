@@ -1,4 +1,4 @@
-# Trigger Logger 2.0.0
+# Trigger Logger
 [![Github All Releases](https://img.shields.io/github/downloads/PhaxeNor/Trigger-Logger/total.svg?style=for-the-badge)](https://github.com/PhaxeNor/Trigger-Logger/releases) [![Twitter Follow](https://img.shields.io/twitter/follow/phaxenor.svg?style=for-the-badge&label=Twitter)](https://twitter.com/PhaxeNor)
 
 Trigger Logger is a Unity Editor script that will give you a list of all your VRC_Triggers.
